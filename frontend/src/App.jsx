@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MOVIES, CINEMAS } from "./movies";
+import { MOVIES, CINEMAS, DATES, SHOWTIMES } from "./movies";
 
 export default function App() {
   const [view, setView] = useState("HOME"); // HOME | BOOKING
@@ -12,6 +12,11 @@ export default function App() {
   const [logs, setLogs] = useState([]);
   const [ticket, setTicket] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(DATES);
+
+
 
   const kongUrl = window.location.origin.replace("-8080.", "-8000.");
 
@@ -162,16 +167,40 @@ export default function App() {
               <span style={{ fontSize: "13px", fontWeight: "600", color: "#64748b" }}>cinemas</span>
             </div>
 
-            {/* BỘ CHỌN TỈNH/THÀNH & RẠP */}
-            <div style={{ display: "flex", gap: "8px", background: "#f8fafc", padding: "6px 12px", borderRadius: "20px", border: "1px solid #cbd5e1" }}>
-              <select value={city} onChange={(e) => { setCity(e.target.value); setCinema(CINEMAS[e.target.value][0]); }} style={{ border: "none", background: "transparent", fontWeight: "600", fontSize: "13px", color: "#334155", outline: "none" }}>
-                {Object.keys(CINEMAS).map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
-              <span style={{ color: "#cbd5e1" }}>|</span>
-              <select value={cinema} onChange={(e) => setCinema(e.target.value)} style={{ border: "none", background: "transparent", fontWeight: "600", fontSize: "13px", color: "#03599d", outline: "none" }}>
-                {CINEMAS[city].map((r) => <option key={r} value={r}>{r}</option>)}
-              </select>
+            {/* MENU CHỌN RẠP 2 CẤP CHUẨN BETA CINEMAS */}
+            <div className={`cinema-dropdown ${menuOpen ? "open" : ""}`}>
+              <div className="cinema-btn" onClick={() => setMenuOpen(!menuOpen)}>
+                <span>{cinema}</span>
+                <span style={{ fontSize: "10px", color: "#64748b" }}>{menuOpen ? "▲" : "▼"}</span>
+              </div>
+
+              <div className="cinema-menu">
+                {Object.entries(CINEMAS).map(([cityName, theaterList]) => (
+                  <div key={cityName} className="city-item">
+                    <span>{cityName}</span>
+                    <span style={{ fontSize: "11px" }}>›</span>
+
+                    <div className="sub-menu">
+                      {theaterList.map((theater) => (
+                        <div
+                          key={theater}
+                          className="sub-item"
+                          onClick={() => {
+                            setCity(cityName);
+                            setCinema(theater);
+                            setMenuOpen(false);
+                          }}
+                        >
+                          {theater}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
+
+
           </div>
 
           <nav style={{ display: "flex", gap: "20px", fontSize: "14px", fontWeight: "700", color: "#334155" }}>
@@ -205,16 +234,36 @@ export default function App() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "28px" }}>
             {MOVIES.map((m) => (
               <div key={m.id} style={{ display: "flex", flexDirection: "column" }}>
-                <div style={{ position: "relative", borderRadius: "14px", overflow: "hidden", aspectRatio: "2/3", boxShadow: "0 4px 12px rgba(0,0,0,0.1)", marginBottom: "12px" }}>
+                <div className="poster-box" onClick={() => { setSelectedMovie(m); setTicket(null); setView("BOOKING"); }}>
                   <img src={m.poster} alt={m.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   <span style={{ position: "absolute", top: "10px", left: "10px", background: "#f59e0b", color: "#fff", fontWeight: "800", fontSize: "12px", padding: "3px 8px", borderRadius: "6px" }}>{m.rating}</span>
                   {m.hot && <span style={{ position: "absolute", top: "10px", right: "-24px", background: "#ef4444", color: "#fff", fontWeight: "800", fontSize: "11px", padding: "3px 28px", transform: "rotate(45deg)" }}>HOT</span>}
+
+                  {/* LỚP THÔNG TIN HIỆN RA KHI DI CHUỘT VÀO */}
+                  <div className="poster-overlay">
+                    <h4 style={{ fontSize: "18px", fontWeight: "800", lineHeight: "1.3", marginBottom: "6px", textTransform: "uppercase" }}>
+                      {m.title} ({m.rating})
+                    </h4>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "13px" }}>
+                      <span style={{ color: "#facc15" }}>🏷️</span> <span>{m.genre}</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "13px" }}>
+                      <span style={{ color: "#facc15" }}>🕒</span> <span>{m.duration}</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "13px" }}>
+                      <span style={{ color: "#facc15" }}>🌐</span> <span>{m.country || "Việt Nam"}</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "13px" }}>
+                      <span style={{ color: "#facc15" }}>💬</span> <span>{m.lang || "Phụ Đề"}</span>
+                    </div>
+                  </div>
                 </div>
+
                 <h3 style={{ fontSize: "17px", fontWeight: "700", color: "#03599d", marginBottom: "6px" }}>{m.title}</h3>
                 <p style={{ fontSize: "13px", color: "#475569", marginBottom: "2px" }}><b>Thể loại:</b> {m.genre}</p>
                 <p style={{ fontSize: "13px", color: "#475569", marginBottom: "12px" }}><b>Thời lượng:</b> {m.duration}</p>
                 <button
-                  onClick={() => { setSelectedMovie(m); setTicket(null); setView("BOOKING"); }}
+                  onClick={() => { setSelectedMovie(m); setTicket(null); setShowModal(true); }}
                   style={{ marginTop: "auto", width: "100%", padding: "10px", background: "linear-gradient(90deg, #0a64a4, #1d8fe1)", color: "#fff", border: "none", borderRadius: "6px", fontWeight: "700", fontSize: "14px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
                 >
                   🎟️ MUA VÉ
@@ -305,9 +354,82 @@ export default function App() {
                 </div>
               </div>
             </div>
+
+            {/* HỘP THOẠI CHỌN NGÀY & SUẤT CHIẾU CHUẨN BETA CINEMAS */}
+            {showModal && (
+              <div style={{ position: "fixed", inset: 0, background: "rgba(0, 0, 0, 0.65)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: "16px" }}>
+                <div style={{ background: "#ffffff", width: "100%", maxWidth: "760px", borderRadius: "8px", overflow: "hidden", boxShadow: "0 20px 40px rgba(0,0,0,0.3)" }}>
+
+                  {/* TIÊU ĐỀ MODAL */}
+                  <div style={{ padding: "16px 24px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: "18px", fontWeight: "700", color: "#334155" }}>
+                      LỊCH CHIẾU - {selectedMovie.title}
+                    </span>
+                    <button onClick={() => setShowModal(false)} style={{ background: "none", border: "none", fontSize: "20px", color: "#94a3b8", cursor: "pointer" }}>✕</button>
+                  </div>
+
+                  {/* NỘI DUNG CHỌN RẠP, NGÀY & SUẤT CHIẾU */}
+                  <div style={{ padding: "24px 32px 36px" }}>
+                    <h2 style={{ textAlign: "center", fontSize: "24px", fontWeight: "700", color: "#1e293b", marginBottom: "24px" }}>
+                      Rạp {cinema}
+                    </h2>
+
+                    {/* THANH CHỌN NGÀY */}
+                    <div style={{ display: "flex", gap: "24px", borderBottom: "1px solid #e2e8f0", marginBottom: "24px", overflowX: "auto" }}>
+                      {DATES.map((d) => {
+                        const active = selectedDate.id === d.id;
+                        return (
+                          <div
+                            key={d.id}
+                            onClick={() => setSelectedDate(d)}
+                            style={{
+                              paddingBottom: "10px", cursor: "pointer", whiteSpace: "nowrap",
+                              color: active ? "#03599d" : "#334155",
+                              borderBottom: active ? "3px solid #03599d" : "3px solid transparent"
+                            }}
+                          >
+                            <span style={{ fontSize: "26px", fontWeight: "800" }}>{d.day}</span>
+                            <span style={{ fontSize: "13px", fontWeight: "700" }}>{d.sub}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* ĐỊNH DẠNG & SUẤT CHIẾU */}
+                    <div style={{ fontSize: "14px", fontWeight: "700", color: "#334155", marginBottom: "12px" }}>
+                      2D PHỤ ĐỀ
+                    </div>
+                    <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+                      {SHOWTIMES.map((st) => (
+                        <div
+                          key={st.time}
+                          onClick={() => {
+                            setSelectedMovie({
+                              ...selectedMovie,
+                              time: `${st.time} (${selectedDate.id}) - ${st.room}`
+                            });
+                            setShowModal(false);
+                            setView("BOOKING");
+                          }}
+                          style={{ textAlign: "center", cursor: "pointer" }}
+                        >
+                          <div style={{ background: "#f1f5f9", border: "1px solid #cbd5e1", padding: "8px 24px", borderRadius: "4px", fontSize: "14px", fontWeight: "700", color: "#1e293b", marginBottom: "4px" }}>
+                            {st.time}
+                          </div>
+                          <div style={{ fontSize: "11px", color: "#64748b" }}>10 ghế trống</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
           </div>
         </main>
       )}
     </div>
+
+
   );
 }

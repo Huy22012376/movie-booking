@@ -42,3 +42,98 @@ button:hover:not(:disabled) {
 .poster-box:hover .poster-overlay {
   opacity: 1;
 }
+.cinema-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.cinema-btn {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 20px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cinema-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 200px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-top: 3px solid #03599d;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+  z-index: 50;
+  margin-top: 1px;
+}
+
+.cinema-menu::before {
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: 20px;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-bottom: 7px solid #03599d;
+}
+
+.cinema-dropdown.open .cinema-menu,
+.cinema-dropdown:hover .cinema-menu {
+  display: block;
+}
+
+
+.city-item {
+  position: relative;
+  padding: 11px 16px;
+  font-size: 13px;
+  color: #334155;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.city-item:hover {
+  background: #03599d;
+  color: #ffffff;
+}
+
+.sub-menu {
+  display: none;
+  position: absolute;
+  top: -1px;
+  left: 100%;
+  width: 210px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-top: 3px solid #03599d;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+}
+
+.city-item:hover .sub-menu {
+  display: block;
+}
+
+.sub-item {
+  padding: 11px 16px;
+  font-size: 13px;
+  color: #334155;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+}
+
+.sub-item:hover {
+  background: #f1f5f9;
+  color: #03599d;
+  font-weight: 700;
+}
