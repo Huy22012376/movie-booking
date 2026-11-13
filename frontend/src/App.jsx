@@ -234,7 +234,7 @@ export default function App() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "28px" }}>
             {MOVIES.map((m) => (
               <div key={m.id} style={{ display: "flex", flexDirection: "column" }}>
-                <div className="poster-box" onClick={() => { setSelectedMovie(m); setTicket(null); setView("BOOKING"); }}>
+                <div className="poster-box" onClick={() => { setSelectedMovie(m); setTicket(null); setShowModal(true); }}>
                   <img src={m.poster} alt={m.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   <span style={{ position: "absolute", top: "10px", left: "10px", background: "#f59e0b", color: "#fff", fontWeight: "800", fontSize: "12px", padding: "3px 8px", borderRadius: "6px" }}>{m.rating}</span>
                   {m.hot && <span style={{ position: "absolute", top: "10px", right: "-24px", background: "#ef4444", color: "#fff", fontWeight: "800", fontSize: "11px", padding: "3px 28px", transform: "rotate(45deg)" }}>HOT</span>}
@@ -263,11 +263,12 @@ export default function App() {
                 <p style={{ fontSize: "13px", color: "#475569", marginBottom: "2px" }}><b>Thể loại:</b> {m.genre}</p>
                 <p style={{ fontSize: "13px", color: "#475569", marginBottom: "12px" }}><b>Thời lượng:</b> {m.duration}</p>
                 <button
-                  onClick={() => { setSelectedMovie(m); setTicket(null); setShowModal(true); }}
-                  style={{ marginTop: "auto", width: "100%", padding: "10px", background: "linear-gradient(90deg, #0a64a4, #1d8fe1)", color: "#fff", border: "none", borderRadius: "6px", fontWeight: "700", fontSize: "14px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
-                >
-                  🎟️ MUA VÉ
-                </button>
+  onClick={() => { setSelectedMovie(m); setTicket(null); setShowModal(true); }}
+  style={{ marginTop: "auto", width: "100%", padding: "10px", background: "linear-gradient(90deg, #0a64a4, #1d8fe1)", color: "#fff", border: "none", borderRadius: "6px", fontWeight: "700", fontSize: "14px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+>
+  🎟️ MUA VÉ
+</button>
+
               </div>
             ))}
           </div>
