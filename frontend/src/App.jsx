@@ -1,122 +1,54 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
-
-function App() {
-  const [count, setCount] = useState(0)
-
+import { useState, useEffect } from "react";
+export default function App() {
+  const [seats, setSeats] = useState([]);
+  const [userId, setUserId] = useState("user_01");
+  const [msg, setMsg] = useState("");
+  const kongUrl = window.location.origin.replace("-8080.", "-8000.");
+  const fetchSeats = async () => {
+    try {
+      const res = await fetch(kongUrl + "/api/seats");
+      setSeats(await res.json());
+    } catch (e) { setMsg("Loi ket noi Kong Gateway (Hay chuyen cong 8000 sang Public)"); }
+  };
+  useEffect(() => { fetchSeats(); const t = setInterval(fetchSeats, 3000); return () => clearInterval(t); }, []);
+  const handleBook = async (seatCode) => {
+    setMsg("Dang xu ly giu ghe " + seatCode + "...");
+    const lockRes = await fetch(kongUrl + "/api/seats/lock", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ seatCode, userId })
+    });
+    if (!lockRes.ok) { const err = await lockRes.json(); setMsg("BI CHAN: " + err.message); return; }
+    setMsg("Da khoa ghe " + seatCode + "! Dang thanh toan qua Kafka...");
+    await fetch(kongUrl + "/api/booking", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ seatCode, userId })
+    });
+    setTimeout(() => { fetchSeats(); setMsg("DAT VE THANH CONG GHE " + seatCode + "!"); }, 1500);
+  };
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+    <div style={{ fontFamily: "sans-serif", maxWidth: 600, margin: "40px auto", textAlign: "center" }}>
+      <h2>HE THONG DAT VE XEM PHIM PHAN TAN</h2>
+      <div style={{ marginBottom: 20 }}>
+        <label>Chon tai khoan test tranh chap: </label>
+        <select value={userId} onChange={(e) => setUserId(e.target.value)} style={{ padding: 6 }}>
+          <option value="user_01">Khach hang 1 (user_01)</option>
+          <option value="user_02">Khach hang 2 (user_02)</option>
+        </select>
+      </div>
+      <div style={{ background: "#333", color: "#fff", padding: 10, borderRadius: 6, marginBottom: 20 }}>MAN HINH CHIEU PHIM</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12 }}>
+        {seats.map((s) => (
+          <button key={s.id} onClick={() => handleBook(s.seatCode)} disabled={s.status === "BOOKED"}
+            style={{
+              padding: "16px 0", borderRadius: 8, border: "none", fontWeight: "bold", cursor: "pointer", color: "#fff",
+              background: s.status === "BOOKED" ? "#e74c3c" : s.status === "LOCKED" ? "#f39c12" : "#2ecc71"
+            }}>
+            {s.seatCode}<br/><small>{s.status}</small>
+          </button>
+        ))}
+      </div>
+      {msg && <div style={{ marginTop: 20, padding: 12, background: "#f0f4f8", borderRadius: 6, fontWeight: "bold" }}>{msg}</div>}
+      <p style={{ marginTop: 20, fontSize: 13, color: "#666" }}>Xanh la: Trong (AVAILABLE) | Cam: Dang giu (LOCKED) | Do: Da ban (BOOKED)</p>
+    </div>
+  );
 }
-
-export default App
