@@ -1,0 +1,205 @@
+networks:
+  cinema-net:
+    driver: bridge
+
+services:
+  # --- 1. MESSAGE BROKER & SEARCH ENGINE ---
+  kafka:
+    image: apache/kafka:3.7.0
+    container_name: kafka
+    networks: [cinema-net]
+    ports: ["9092:9092"]
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_HEAP_OPTS: "-Xmx512M -Xms256M"
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    container_name: elasticsearch
+    networks: [cinema-net]
+    ports: ["9200:9200"]
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+
+  # --- 2. DATABASE CLUSTER (PRIMARY - REPLICA) ---
+  catalog-db-primary:
+    image: postgres:16-alpine
+    container_name: catalog-db-primary
+    networks: [cinema-net]
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=catalog_db
+
+  catalog-db-replica:
+    image: postgres:16-alpine
+    container_name: catalog-db-replica
+    networks: [cinema-net]
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=catalog_db
+
+  booking-db-primary:
+    image: postgres:16-alpine
+    container_name: booking-db-primary
+    networks: [cinema-net]
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=booking_db
+
+  booking-db-replica:
+    image: postgres:16-alpine
+    container_name: booking-db-replica
+    networks: [cinema-net]
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=booking_db
+
+  # --- 3. MICROSERVICES (NESTJS) ---
+  catalog-service-1:
+    build: ./services/catalog-service
+    container_name: catalog-service-1
+    networks: [cinema-net]
+    depends_on: [catalog-db-primary, kafka]
+    environment:
+      - PORT=3001
+      - SERVICE_NAME=catalog-service-1
+      - DB_HOST=catalog-db-primary
+      - DB_NAME=catalog_db
+
+  catalog-service-2:
+    build: ./services/catalog-service
+    container_name: catalog-service-2
+    networks: [cinema-net]
+    depends_on: [catalog-db-primary, kafka]
+    environment:
+      - PORT=3001
+      - SERVICE_NAME=catalog-service-2
+      - DB_HOST=catalog-db-primary
+      - DB_NAME=catalog_db
+
+  booking-service:
+    build: ./services/booking-service
+    container_name: booking-service
+    networks: [cinema-net]
+    depends_on: [booking-db-primary, kafka]
+    environment:
+      - PORT=3002
+      - SERVICE_NAME=booking-service
+      - DB_HOST=booking-db-primary
+      - DB_NAME=booking_db
+
+  seat-locking:
+    build: ./services/seat-locking
+    container_name: seat-locking
+    networks: [cinema-net]
+    depends_on: [booking-db-primary, kafka]
+    environment:
+      - PORT=3003
+      - SERVICE_NAME=seat-locking
+      - DB_HOST=booking-db-primary
+      - DB_NAME=booking_db
+
+  payment-service:
+    build: ./services/payment-service
+    container_name: payment-service
+    networks: [cinema-net]
+    depends_on: [booking-db-primary, kafka]
+    environment:
+      - PORT=3004
+      - SERVICE_NAME=payment-service
+      - DB_HOST=booking-db-primary
+      - DB_NAME=booking_db
+
+  user-service:
+    build: ./services/user-service
+    container_name: user-service
+    networks: [cinema-net]
+    depends_on: [catalog-db-primary, kafka]
+    environment:
+      - PORT=3005
+      - SERVICE_NAME=user-service
+      - DB_HOST=catalog-db-primary
+      - DB_NAME=catalog_db
+
+  notification-service:
+    build: ./services/notification-service
+    container_name: notification-service
+    networks: [cinema-net]
+    depends_on: [kafka]
+    environment:
+      - PORT=3006
+      - SERVICE_NAME=notification-service
+      - DB_HOST=catalog-db-primary
+      - DB_NAME=catalog_db
+
+  # --- 4. FRONTEND (3 BẢN SAO REACT CHO NGINX CHIA TẢI) ---
+  frontend-1:
+    build: ./frontend
+    container_name: frontend-1
+    networks: [cinema-net]
+
+  frontend-2:
+    build: ./frontend
+    container_name: frontend-2
+    networks: [cinema-net]
+
+  frontend-3:
+    build: ./frontend
+    container_name: frontend-3
+    networks: [cinema-net]
+
+  # --- 5. API GATEWAY & LOAD BALANCER ---
+  kong-gateway:
+    image: kong:3.6
+    container_name: kong-gateway
+    networks: [cinema-net]
+    ports: ["8000:8000", "8001:8001"]
+    environment:
+      - KONG_DATABASE=off
+      - KONG_DECLARATIVE_CONFIG=/usr/local/kong/declarative/kong.yml
+      - KONG_PROXY_ACCESS_LOG=/dev/stdout
+      - KONG_PROXY_ERROR_LOG=/dev/stderr
+    volumes:
+      - ./gateway/kong/kong.yml:/usr/local/kong/declarative/kong.yml
+
+  nginx-lb:
+    image: nginx:alpine
+    container_name: nginx-lb
+    networks: [cinema-net]
+    depends_on: [frontend-1, frontend-2, frontend-3, catalog-service-1, catalog-service-2]
+    ports: ["8080:80"]
+    volumes:
+      - ./gateway/nginx/nginx.conf:/etc/nginx/nginx.conf
+
+  # --- 6. MONITORING & OBSERVABILITY ---
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    networks: [cinema-net]
+    ports: ["9090:9090"]
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    networks: [cinema-net]
+    ports: ["3005:3000"]
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin

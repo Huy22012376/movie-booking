@@ -1,0 +1,17 @@
+_format_version: "3.0"
+services:
+  - name: booking-service
+    url: http://booking-service:3002
+    routes:
+      - name: booking-route
+        paths: ["/api/booking"]
+  - name: user-service
+    url: http://user-service:3003
+    routes:
+      - name: user-route
+        paths: ["/api/users"]
+  - name: payment-service
+    url: http://payment-service:3004
+    routes:
+      - name: payment-route
+        paths: ["/api/payments"]

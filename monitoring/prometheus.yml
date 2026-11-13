@@ -1,0 +1,10 @@
+global:
+  scrape_interval: 15s
+scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+  - job_name: "nestjs-microservices"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["catalog-service-1:3001", "catalog-service-2:3001", "booking-service:3002", "seat-locking:3003", "payment-service:3004", "user-service:3005", "notification-service:3006"]
