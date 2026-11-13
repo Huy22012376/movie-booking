@@ -5,7 +5,10 @@ export class Seat {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'varchar', unique: true })
+  @Column({ type: 'varchar', default: 'm1' })
+  movieId: string;
+
+  @Column({ type: 'varchar' })
   seatCode: string;
 
   @Column({ type: 'varchar', default: 'AVAILABLE' })
@@ -14,6 +17,6 @@ export class Seat {
   @Column({ type: 'varchar', nullable: true })
   lockedBy: string | null;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   lockedUntil: Date | null;
 }

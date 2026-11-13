@@ -9,30 +9,42 @@ export class AppService implements OnModuleInit {
   constructor(
     @InjectRepository(Seat) private seatRepo: Repository<Seat>,
     private dataSource: DataSource,
-  ) {}
+  ) { }
 
-  // Tự động tạo sẵn 10 ghế mẫu (A1 -> A10) khi khởi động
   async onModuleInit() {
     const count = await this.seatRepo.count();
     if (count === 0) {
-      const initialSeats = Array.from({ length: 10 }, (_, i) => ({
-        seatCode: `A${i + 1}`,
-        status: 'AVAILABLE',
-      }));
+      const movies = ['m1', 'm2', 'm3', 'm4'];
+      const initialSeats = movies.flatMap((movieId) =>
+        Array.from({ length: 10 }, (_, i) => ({
+          movieId,
+          seatCode: `A${i + 1}`,
+          status: 'AVAILABLE',
+        })),
+      );
       await this.seatRepo.save(initialSeats);
     }
   }
 
-  async getAllSeats() {
-    return this.seatRepo.find({ order: { seatCode: 'ASC' } });
+  async getAllSeats(movieId = 'm1') {
+    const seats = await this.seatRepo.find({
+      where: { movieId },
+      order: { seatCode: 'ASC' },
+    });
+    const now = Date.now();
+    return seats.map((s) => ({
+      ...s,
+      remainingSeconds:
+        s.status === 'LOCKED' && s.lockedUntil
+          ? Math.max(0, Math.ceil((new Date(s.lockedUntil).getTime() - now) / 1000))
+          : 0,
+    }));
   }
 
-  // CƠ CHẾ ĐỒNG BỘ HÓA (CHƯƠNG 6): Pessimistic Locking chống đặt trùng ghế
-  async lockSeat(seatCode: string, userId: string) {
+  async lockSeat(seatCode: string, userId: string, movieId = 'm1') {
     return await this.dataSource.transaction(async (manager) => {
-      // Khóa dòng dữ liệu ghế này lại (FOR UPDATE), buộc các luồng khác phải chờ
       const seat = await manager.findOne(Seat, {
-        where: { seatCode },
+        where: { seatCode, movieId },
         lock: { mode: 'pessimistic_write' },
       });
 
@@ -43,13 +55,26 @@ export class AppService implements OnModuleInit {
 
       seat.status = 'LOCKED';
       seat.lockedBy = userId;
-      seat.lockedUntil = new Date(Date.now() + 5 * 60 * 1000); // Giữ trong 5 phút
+      seat.lockedUntil = new Date(Date.now() + 1 * 30 * 1000);
       return await manager.save(seat);
     });
   }
 
-  // TIẾN TRÌNH CHẠY NGẦM (CHƯƠNG 3): Cron Job quét mỗi 30 giây để nhả ghế quá hạn
-  @Cron(CronExpression.EVERY_30_SECONDS)
+  async unlockSeat(seatCode: string, userId: string, movieId = 'm1') {
+  const seat = await this.seatRepo.findOne({ where: { seatCode, movieId } });
+    if (!seat) throw new NotFoundException('Không tìm thấy ghế');
+    if (seat.status === 'LOCKED' && seat.lockedBy === userId) {
+      await this.seatRepo.update(
+        { id: seat.id },
+        { status: 'AVAILABLE', lockedBy: null, lockedUntil: null },
+      );
+      return { ...seat, status: 'AVAILABLE', lockedBy: null, lockedUntil: null };
+    }
+    return seat;
+  }
+
+
+  @Cron(CronExpression.EVERY_SECOND)
   async releaseExpiredSeats() {
     const expiredSeats = await this.seatRepo.find({
       where: {
