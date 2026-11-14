@@ -31,6 +31,7 @@ services:
       - discovery.type=single-node
       - xpack.security.enabled=false
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
+
   # --- 2. DATABASE CLUSTER (PRIMARY - REPLICA) ---
   user-db-primary:
     image: postgres:16-alpine
@@ -40,15 +41,24 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=user_db
+    command: >
+      postgres -c wal_level=replica -c max_wal_senders=10 -c max_replication_slots=10 -c hot_standby=on
 
   user-db-replica:
     image: postgres:16-alpine
     container_name: user-db-replica
     networks: [cinema-net]
+    depends_on: [user-db-primary]
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=user_db
+      - PGPASSWORD=postgres
+    command: >
+      bash -c "
+      until pg_isready -h user-db-primary -U postgres; do sleep 2; done;
+      rm -rf /var/lib/postgresql/data/*;
+      pg_basebackup -h user-db-primary -D /var/lib/postgresql/data -U postgres -v -P -R -X stream;
+      chmod 0700 /var/lib/postgresql/data;
+      exec docker-entrypoint.sh postgres -c hot_standby=on
+      "
 
   catalog-db-primary:
     image: postgres:16-alpine
@@ -76,15 +86,24 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=booking_db
+    command: >
+      postgres -c wal_level=replica -c max_wal_senders=10 -c max_replication_slots=10 -c hot_standby=on
 
   booking-db-replica:
     image: postgres:16-alpine
     container_name: booking-db-replica
     networks: [cinema-net]
+    depends_on: [booking-db-primary]
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=booking_db
+      - PGPASSWORD=postgres
+    command: >
+      bash -c "
+      until pg_isready -h booking-db-primary -U postgres; do sleep 2; done;
+      rm -rf /var/lib/postgresql/data/*;
+      pg_basebackup -h booking-db-primary -D /var/lib/postgresql/data -U postgres -v -P -R -X stream;
+      chmod 0700 /var/lib/postgresql/data;
+      exec docker-entrypoint.sh postgres -c hot_standby=on
+      "
   # --- 3. MICROSERVICES (NESTJS) ---
   catalog-service-1:
     build: ./services/catalog-service

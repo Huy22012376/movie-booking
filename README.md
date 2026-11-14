@@ -13,11 +13,10 @@ docker exec booking-db-primary psql -U postgres -d booking_db -c "SELECT applica
 docker exec booking-db-primary psql -U postgres -d booking_db -c "UPDATE seats SET status='AVAILABLE', \"lockedBy\"=NULL, \"lockedUntil\"=NULL;"
 
 
-
 ### XEM TÀI KHOẢN NGƯỜI DÙNG
 docker exec user-db-primary psql -U postgres -d user_db -c "SELECT \"fullName\", email, phone FROM users;"
-
-
+### Kiểm tra trạng thái kết nối luồng nhân bản từ Primary sang Replica
+Kiểm tra trạng thái kết nối luồng nhân bản từ Primary sang Replica
 ### chạy lại codespace
 docker compose up -d && sleep 15 && docker restart kong-gateway
 
