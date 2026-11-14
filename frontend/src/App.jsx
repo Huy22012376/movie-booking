@@ -462,7 +462,7 @@ export default function App() {
                 })}
               </div>
               <div style={{ display: "flex", justifyContent: "center", gap: "20px", fontSize: "12px", color: "#475569", borderTop: "1px solid #e2e8f0", paddingTop: "16px" }}>
-                <span>⬜ Ghế trống</span><span>🟨 Đang giữ (60s)</span><span>🟥 Đã bán</span>
+                <span>⬜ Ghế trống</span><span>🟨 Ghế đang được giữ</span><span>🟥 Đã bán</span>
               </div>
             </div>
 
