@@ -16,7 +16,24 @@ docker exec booking-db-primary psql -U postgres -d booking_db -c "UPDATE seats S
 ### XEM TÀI KHOẢN NGƯỜI DÙNG
 docker exec user-db-primary psql -U postgres -d user_db -c "SELECT \"fullName\", email, phone FROM users;"
 ### Kiểm tra trạng thái kết nối luồng nhân bản từ Primary sang Replica
-Kiểm tra trạng thái kết nối luồng nhân bản từ Primary sang Replica
+docker exec user-db-primary psql -U postgres -d user_db -c "SELECT \"fullName\", email, phone FROM users;" && \
+docker exec user-db-replica psql -U postgres -d user_db -c "SELECT \"fullName\", email, phone FROM users;"
+### Xem trạng thái ghế đã đặt / đang giữ (seats) ở cả Primary và Replica
+docker exec booking-db-primary psql -U postgres -d booking_db -c "SELECT \"movieId\", \"seatCode\", status, \"lockedBy\" FROM seats WHERE status != 'AVAILABLE';" && \
+docker exec booking-db-replica psql -U postgres -d booking_db -c "SELECT \"movieId\", \"seatCode\", status, \"lockedBy\" FROM seats WHERE status != 'AVAILABLE';"
+### Xem danh sách đơn đặt vé đã thanh toán (bookings) ở cả Primary và Replica
+docker exec booking-db-primary psql -U postgres -d booking_db -c "SELECT id, \"seatCode\", \"userId\" FROM bookings;" && \
+docker exec booking-db-replica psql -U postgres -d booking_db -c "SELECT id, \"seatCode\", \"userId\" FROM bookings;"
+
+
+
+docker exec booking-db-primary psql -U postgres -c "SELECT client_addr, state, sync_state FROM pg_stat_replication;"
+
+
+
+
+
+
 ### chạy lại codespace
 docker compose up -d && sleep 15 && docker restart kong-gateway
 
