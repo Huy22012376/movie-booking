@@ -72,3 +72,12 @@ docker compose up -d --build frontend-1 frontend-2 frontend-3
 
 ### Lưu toàn bộ mã nguồn lên GitHub
 git add . && git commit -m "Update README with full DB inspection commands" && git push
+
+### Tài khoản và mật khẩu grafana
+admin
+admin
+-----
+### Xem danh sách toàn bộ 22 container đang chạy song song
+docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
+### Xem mức tiêu thụ RAM và CPU thực tế của từng container
+docker stats --no-stream
