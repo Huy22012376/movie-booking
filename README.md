@@ -52,6 +52,11 @@ docker exec booking-db-replica psql -U postgres -d booking_db -c "SELECT id, \"s
 ---
 
 ## 4. Kiểm tra Load Balancer (Nginx) & Microservices
+for f in frontend-1 frontend-2 frontend-3; do
+  echo "=== $f ==="
+  docker logs $f --tail 3
+done
+
 
 ### Xem log phân phối tải của Nginx Load Balancer
 docker logs nginx-lb --tail 10
