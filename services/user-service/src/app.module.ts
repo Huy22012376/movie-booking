@@ -2,26 +2,23 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { User } from './user.entity';
 
 @Module({
   imports: [
-    // Xuất chỉ số sức khỏe tại đường dẫn /metrics cho Prometheus thu thập
-    PrometheusModule.register({ path: '/metrics' }),
-    
-    // Kết nối tới PostgreSQL (tự động nhận cấu hình từ biến môi trường Docker)
+    PrometheusModule.register(),
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT || '5432', 10),
-      username: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASSWORD || 'postgres',
-      database: process.env.DB_NAME || 'catalog_db',
-      autoLoadEntities: true,
+      host: process.env.DB_HOST || 'user-db-primary',
+      port: 5432,
+      username: 'postgres',
+      password: 'postgres',
+      database: 'user_db',
+      entities: [User],
       synchronize: true,
     }),
+    TypeOrmModule.forFeature([User]),
   ],
   controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}

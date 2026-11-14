@@ -45,7 +45,10 @@ button:hover:not(:disabled) {
 .cinema-dropdown {
   position: relative;
   display: inline-block;
+  padding-bottom: 8px;
+  margin-bottom: -8px;
 }
+
 
 .cinema-btn {
   background: #ffffff;
@@ -72,8 +75,9 @@ button:hover:not(:disabled) {
   border-top: 3px solid #03599d;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
   z-index: 50;
-  margin-top: 1px;
+  margin-top: 0px;
 }
+
 
 .cinema-menu::before {
   content: "";
@@ -136,4 +140,105 @@ button:hover:not(:disabled) {
   background: #f1f5f9;
   color: #03599d;
   font-weight: 700;
+}
+.cine-footer {
+  background: linear-gradient(180deg, #0a589c 0%, #063d73 100%);
+  color: #ffffff;
+  margin-top: 60px;
+  padding: 48px 16px 36px;
+  font-size: 13px;
+}
+
+.footer-grid {
+  max-width: 1140px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1.6fr 1.4fr;
+  gap: 32px;
+}
+
+.footer-title {
+  font-size: 15px;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding-bottom: 8px;
+  margin-bottom: 14px;
+  border-bottom: 2px solid #38bdf8;
+  display: inline-block;
+}
+
+.footer-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.footer-list li {
+  color: #e2e8f0;
+  cursor: pointer;
+}
+
+.footer-list li:hover {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+.scroll-top-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #03599d;
+  border: 2px solid #03599d;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  font-size: 18px;
+  font-weight: 900;
+  cursor: pointer;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.schedule-featured {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 28px;
+  padding-bottom: 36px;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 36px;
+}
+
+.schedule-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 32px;
+}
+
+.showtime-pill {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  padding: 8px 18px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+  cursor: pointer;
+  min-width: 82px;
+  text-align: center;
+}
+
+.showtime-pill.late {
+  background: #93c5fd;
+  border-color: #60a5fa;
+  color: #0f172a;
+}
+
+.showtime-pill:hover {
+  background: #03599d;
+  color: #ffffff;
+  border-color: #03599d;
 }

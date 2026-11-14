@@ -27,10 +27,18 @@ export class AppService implements OnModuleInit {
   }
 
   async getAllSeats(movieId = 'm1') {
-    const seats = await this.seatRepo.find({
+    let seats = await this.seatRepo.find({
       where: { movieId },
       order: { seatCode: 'ASC' },
     });
+    if (seats.length === 0) {
+      const newSeats = Array.from({ length: 10 }, (_, i) => ({
+        movieId,
+        seatCode: `A${i + 1}`,
+        status: 'AVAILABLE',
+      }));
+      seats = await this.seatRepo.save(newSeats);
+    }
     const now = Date.now();
     return seats.map((s) => ({
       ...s,

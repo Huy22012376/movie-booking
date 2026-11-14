@@ -16,7 +16,7 @@ services:
     url: http://user-service:3005
     routes:
       - name: user-route
-        paths: ["/api/users"]
+        paths: ["/api/users", "/api/auth"]
         strip_path: false
   - name: payment-service
     url: http://payment-service:3004
