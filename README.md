@@ -79,6 +79,12 @@ docker compose up -d --build frontend-1 frontend-2 frontend-3
 
 ### Lưu toàn bộ mã nguồn lên GitHub
 git add . && git commit -m "Update README with full DB inspection commands" && git push
+***
+grep -qxF 'backups/' .gitignore 2>/dev/null || echo 'backups/' >> .gitignore && \
+git add . && \
+git commit -m "Complete full distributed movie booking system" && \
+git push
+
 
 ### Tài khoản và mật khẩu grafana
 admin
