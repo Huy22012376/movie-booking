@@ -67,6 +67,8 @@ docker start frontend-1
 ### Khởi động lại toàn bộ hệ thống khi mở lại Codespace
 docker compose up -d && sleep 15 && docker restart kong-gateway
 
+lưu ý 8080, 8000, 3005 public
+
 ### Cập nhật và đóng gói lại dịch vụ sau khi sửa code
 docker compose up -d --build frontend-1 frontend-2 frontend-3
 
