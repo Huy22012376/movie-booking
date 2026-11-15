@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { MOVIES, CINEMAS, getUpcomingDates, getShowtimesForCinema } from "./movies";
 import AuthPage from "./AuthPage";
+import PaymentPanel from "./PaymentPanel";
+import QrModal from "./QrModal";
 
 export default function App() {
   const dates = getUpcomingDates();
@@ -13,6 +15,12 @@ export default function App() {
   );
   const [view, setView] = useState(saved?.view || "HOME");
   const [pendingBooking, setPendingBooking] = useState(false);
+  const [checkoutStep, setCheckoutStep] = useState("SEATS");
+  const [combos, setCombos] = useState({ family: 0, sweet: 0 });
+  const [voucherCode, setVoucherCode] = useState("");
+  const [discount, setDiscount] = useState(0);
+  const [payMethod, setPayMethod] = useState("QR");
+  const [showQrModal, setShowQrModal] = useState(false);
   const [city, setCity] = useState(saved?.city || "Hà Nội");
   const [cinema, setCinema] = useState(saved?.cinema || "Cine Thanh Xuân");
   const [tab, setTab] = useState("DANG_CHIEU");
@@ -121,6 +129,7 @@ export default function App() {
   };
 
   const goToBooking = (movieObj, timeStr) => {
+    setCheckoutStep("SEATS"); setCombos({ family: 0, sweet: 0 }); setDiscount(0); setShowQrModal(false);
     setSelectedTime(timeStr);
     setSelectedMovie(movieObj);
     setTicket(null);
@@ -144,7 +153,9 @@ export default function App() {
 
   const myLockedSeats = seats.filter((s) => s.status === "LOCKED" && s.lockedBy === activeUserId);
   const minRemain = myLockedSeats.length > 0 ? Math.min(...myLockedSeats.map((s) => s.remainingSeconds || 0)) : 0;
-  const totalPrice = myLockedSeats.length * selectedMovie.price;
+  const seatTotal = myLockedSeats.length * selectedMovie.price;
+  const comboTotal = combos.family * 220000 + combos.sweet * 110000;
+  const totalPrice = Math.max(0, seatTotal + comboTotal - discount);
 
   const handleToggleSeat = async (seat) => {
     if (seat.status === "BOOKED" || busy) return;
@@ -443,8 +454,8 @@ export default function App() {
             Phim dành cho khán giả theo phân loại độ tuổi ({selectedMovie.rating}). Vui lòng kiểm tra thông tin suất chiếu trước khi đặt ghế.
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: "24px" }}>
-            <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "24px", textAlign: "center" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1.55fr 1fr", gap: "24px" }}>
+            {checkoutStep === "PAYMENT" && myLockedSeats.length > 0 ? <PaymentPanel currentUser={currentUser} selectedMovie={selectedMovie} myLockedSeats={myLockedSeats} seatTotal={seatTotal} comboTotal={comboTotal} totalPrice={totalPrice} combos={combos} setCombos={setCombos} voucherCode={voucherCode} setVoucherCode={setVoucherCode} discount={discount} setDiscount={setDiscount} payMethod={payMethod} setPayMethod={setPayMethod} minRemain={minRemain} /> : <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "24px", textAlign: "center" }}>
               <h2 style={{ fontSize: "20px", color: "#03599d", marginBottom: "4px" }}>{selectedMovie.title}</h2>
               <p style={{ fontSize: "13px", color: "#64748b", marginBottom: "24px" }}>{cinema} • {selectedMovie.time}</p>
               <div style={{ height: "8px", width: "80%", margin: "0 auto 8px", background: "linear-gradient(90deg, transparent, #03599d, transparent)", borderRadius: "50%" }} />
@@ -467,56 +478,99 @@ export default function App() {
               <div style={{ display: "flex", justifyContent: "center", gap: "20px", fontSize: "12px", color: "#475569", borderTop: "1px solid #e2e8f0", paddingTop: "16px" }}>
                 <span>⬜ Ghế trống</span><span>🟨 Ghế đang được giữ</span><span>🟥 Đã bán</span>
               </div>
-            </div>
+            </div>}
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 4px 12px rgba(0,0,0,0.04)" }}>
-                <h3 style={{ fontSize: "16px", color: "#03599d", marginBottom: "12px" }}>💳 THÔNG TIN ĐẶT VÉ</h3>
-                {myLockedSeats.length > 0 ? (
-                  <div style={{ background: "#fffbeb", border: "1px solid #f59e0b", borderRadius: "10px", padding: "14px", fontSize: "13px" }}>
-                    <div style={{ color: "#b45309", fontWeight: "bold", marginBottom: "6px" }}>
-                      ⏳ Đang giữ {myLockedSeats.length} ghế: <span style={{ color: "#0f172a" }}>{myLockedSeats.map((s) => s.seatCode).join(", ")}</span>
+            <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "22px", boxShadow: "0 4px 16px rgba(0,0,0,0.05)" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "125px 1fr", gap: "16px", paddingBottom: "18px", borderBottom: "1px dashed #cbd5e1", marginBottom: "18px" }}>
+                <div style={{ position: "relative", borderRadius: "10px", overflow: "hidden", aspectRatio: "2/3", boxShadow: "0 4px 10px rgba(0,0,0,0.12)" }}>
+                  <img src={selectedMovie.poster} alt={selectedMovie.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <span style={{ position: "absolute", top: "8px", left: "8px", background: selectedMovie.rating === "P" ? "#16a34a" : selectedMovie.rating === "T13" ? "#0284c7" : selectedMovie.rating === "T18" ? "#dc2626" : "#f59e0b", color: "#fff", fontWeight: "800", fontSize: "11px", padding: "2px 7px", borderRadius: "5px" }}>
+                    {selectedMovie.rating}
+                  </span>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                  <h3 style={{ fontSize: "20px", fontWeight: "800", color: "#03599d", lineHeight: "1.3", marginBottom: "8px" }}>
+                    {selectedMovie.title}
+                  </h3>
+                  <div style={{ fontSize: "14px", fontWeight: "600", color: "#334155" }}>2D Phụ đề</div>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "14px", color: "#334155", marginBottom: "20px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ color: "#64748b" }}>🏷️ Thể loại</span>
+                  <b style={{ color: "#1e293b" }}>{selectedMovie.genre}</b>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "12px", borderBottom: "1px dashed #e2e8f0" }}>
+                  <span style={{ color: "#64748b" }}>🕒 Thời lượng</span>
+                  <b style={{ color: "#1e293b" }}>{selectedMovie.duration}</b>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ color: "#64748b" }}>🏛️ Rạp chiếu</span>
+                  <b style={{ color: "#1e293b" }}>{cinema}</b>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ color: "#64748b" }}>📅 Ngày chiếu</span>
+                  <b style={{ color: "#1e293b" }}>{selectedDate.id}/2026</b>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ color: "#64748b" }}>⏰ Giờ chiếu</span>
+                  <b style={{ color: "#1e293b" }}>{selectedTime}</b>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ color: "#64748b" }}>💺 Ghế ngồi</span>
+                  <b style={{ color: myLockedSeats.length > 0 ? "#03599d" : "#94a3b8" }}>
+                    {myLockedSeats.length > 0 ? myLockedSeats.map((s) => s.seatCode).join(", ") : "Chưa chọn ghế"}
+                  </b>
+                </div>
+                {myLockedSeats.length > 0 && (
+                  <>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ color: "#64748b" }}>⏳ Thời gian giữ</span>
+                      <b style={{ color: "#ef4444" }}>{minRemain}s</b>
                     </div>
-                    <div style={{ color: "#475569", marginBottom: "4px" }}>Thời gian giữ còn lại: <b style={{ color: "#ef4444" }}>{minRemain}s</b></div>
-                    <div style={{ color: "#475569", marginBottom: "12px" }}>Tổng tiền: <b style={{ color: "#03599d", fontSize: "16px" }}>{totalPrice.toLocaleString("vi-VN")} đ</b></div>
-                    <button onClick={handleConfirmPayment} disabled={busy} style={{ width: "100%", padding: "11px", background: "#03599d", color: "#fff", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}>
-                      {busy ? "ĐANG XỬ LÝ QUA KAFKA..." : `✅ THANH TOÁN ${myLockedSeats.length} GHẾ (${totalPrice.toLocaleString("vi-VN")} đ)`}
-                    </button>
-                  </div>
-                ) : ticket ? (
-                  <div style={{ background: "#f0f9ff", border: "1px dashed #03599d", borderRadius: "10px", padding: "14px", fontSize: "13px" }}>
-                    <div style={{ fontWeight: "bold", fontSize: "16px", color: "#03599d", marginBottom: "6px" }}>🎟️ {ticket.movie}</div>
-                    <div style={{ marginBottom: "4px" }}>Khách hàng: <b>{ticket.user}</b></div>
-                    <div style={{ marginBottom: "4px" }}>Rạp: <b>{ticket.cinema}</b> • Suất: <b>{ticket.time}</b></div>
-                    <div style={{ marginBottom: "4px" }}>Ghế ({ticket.count}): <b style={{ color: "#059669" }}>{ticket.seats}</b></div>
-                    <div style={{ marginBottom: "8px" }}>Đã thanh toán: <b style={{ color: "#d97706" }}>{ticket.price}</b></div>
-                    <div style={{ fontSize: "11px", color: "#64748b", background: "#fff", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", wordBreak: "break-all" }}>
-                      UUID: {ticket.ids.join(" | ")}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "8px", borderTop: "1px solid #e2e8f0" }}>
+                      <span style={{ fontWeight: "700", color: "#1e293b" }}>Tổng thanh toán</span>
+                      <b style={{ color: "#03599d", fontSize: "18px" }}>{totalPrice.toLocaleString("vi-VN")} đ</b>
                     </div>
-                  </div>
-                ) : (
-                  <div style={{ color: "#64748b", fontSize: "13px", padding: "16px 0", textAlign: "center" }}>
-                    Chọn ghế trống bên trái để giữ chỗ (màu vàng), bấm lại để hủy hoặc bấm thanh toán để xuất vé qua Kafka.
-                  </div>
+                  </>
                 )}
               </div>
 
-              <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", flex: 1 }}>
-                <h3 style={{ fontSize: "14px", color: "#475569", marginBottom: "10px" }}>⚡ LIVE DISTRIBUTED SYSTEM LOGS</h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "12px" }}>
-                  {logs.length === 0 && <span style={{ color: "#94a3b8" }}>Đang chờ sự kiện giao dịch...</span>}
-                  {logs.map((l, idx) => (
-                    <div key={idx} style={{ padding: "8px 10px", borderRadius: "6px", background: "#fff", border: "1px solid #e2e8f0", borderLeft: `3px solid ${l.type === "error" ? "#ef4444" : l.type === "success" ? "#10b981" : l.type === "warning" ? "#f59e0b" : "#03599d"}` }}>
-                      <span style={{ color: "#94a3b8", marginRight: "6px" }}>[{l.time}]</span>
-                      <span style={{ color: l.type === "error" ? "#dc2626" : "#1e293b" }}>{l.text}</span>
-                    </div>
-                  ))}
+              {myLockedSeats.length > 0 ? (
+                checkoutStep === "SEATS" ? (
+                  <button onClick={() => setCheckoutStep("PAYMENT")} style={{ width: "100%", padding: "12px", background: "linear-gradient(90deg, #0a64a4, #1d8fe1)", color: "#fff", border: "none", borderRadius: "8px", fontWeight: "800", fontSize: "15px", cursor: "pointer" }}>
+                    TIẾP TỤC
+                  </button>
+                ) : (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                    <button onClick={() => setCheckoutStep("SEATS")} style={{ padding: "12px", background: "#cbd5e1", color: "#1e293b", border: "none", borderRadius: "8px", fontWeight: "800", fontSize: "14px", cursor: "pointer" }}>QUAY LẠI</button>
+                    <button onClick={() => setShowQrModal(true)} disabled={busy} style={{ padding: "12px", background: "linear-gradient(90deg, #0a64a4, #1d8fe1)", color: "#fff", border: "none", borderRadius: "8px", fontWeight: "800", fontSize: "14px", cursor: "pointer" }}>TIẾP TỤC</button>
+                  </div>
+                )
+              ) : ticket ? (
+                <div style={{ background: "#f0f9ff", border: "1px dashed #03599d", borderRadius: "10px", padding: "14px", fontSize: "13px" }}>
+                  <div style={{ fontWeight: "800", color: "#059669", marginBottom: "6px" }}>✅ ĐẶT VÉ THÀNH CÔNG!</div>
+                  <div style={{ marginBottom: "4px" }}>Khách hàng: <b>{ticket.user}</b></div>
+                  <div style={{ marginBottom: "4px" }}>Ghế ({ticket.count}): <b style={{ color: "#03599d" }}>{ticket.seats}</b></div>
+                  <div style={{ marginBottom: "8px" }}>Đã thanh toán: <b style={{ color: "#d97706" }}>{ticket.price}</b></div>
+                  <div style={{ fontSize: "11px", color: "#64748b", background: "#fff", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1", wordBreak: "break-all" }}>
+                    UUID: {ticket.ids.join(" | ")}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <button
+                  disabled
+                  style={{ width: "100%", padding: "12px", background: "#cbd5e1", color: "#fff", border: "none", borderRadius: "8px", fontWeight: "800", fontSize: "15px", cursor: "not-allowed" }}
+                >
+                  TIẾP TỤC
+                </button>
+              )}
             </div>
           </div>
         </main>
       )}
+{showQrModal && myLockedSeats.length > 0 && <QrModal payMethod={payMethod} cinema={cinema} myLockedSeats={myLockedSeats} totalPrice={totalPrice} activeUserId={activeUserId} minRemain={minRemain} busy={busy} onClose={() => setShowQrModal(false)} onConfirm={() => { setShowQrModal(false); setCheckoutStep("SEATS"); handleConfirmPayment(); }} />}
       {showModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0, 0, 0, 0.65)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: "16px" }}>
           <div style={{ background: "#ffffff", width: "100%", maxWidth: "760px", borderRadius: "8px", overflow: "hidden", boxShadow: "0 20px 40px rgba(0,0,0,0.3)" }}>
