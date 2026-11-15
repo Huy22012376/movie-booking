@@ -248,9 +248,9 @@ export default function App() {
 
   return (
     <div style={{ minHeight: "100vh", background: "#fff" }}>
-      <div style={{ background: "#031327", color: "#fff", fontSize: "12px", padding: "7px 0" }}>
+      <div style={{ background: "#015198", color: "#fff", fontSize: "12px", padding: "7px 0" }}>
         <div style={{ maxWidth: "1140px", margin: "0 auto", padding: "0 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span>Hệ thống đặt vé phân tán • Microservices & Kafka</span>
+          <span>Hệ thống đặt vé xem phim phân tán Microservices</span>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             {currentUser ? (
               <>
@@ -355,7 +355,7 @@ export default function App() {
                 <h3 style={{ fontSize: "17px", fontWeight: "700", color: "#03599d", marginBottom: "6px" }}>{m.title}</h3>
                 <p style={{ fontSize: "13px", color: "#475569", marginBottom: "2px" }}><b>Thể loại:</b> {m.genre}</p>
                 <p style={{ fontSize: "13px", color: "#475569", marginBottom: "12px" }}><b>Thời lượng:</b> {m.duration}</p>
-                <button onClick={() => openScheduleModal(m)} style={{ marginTop: "auto", width: "100%", padding: "10px", background: "linear-gradient(90deg, #0a64a4, #1d8fe1)", color: "#fff", border: "none", borderRadius: "6px", fontWeight: "700", fontSize: "14px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                <button onClick={() => openScheduleModal(m)} style={{ marginTop: "auto", width: "100%", padding: "10px", background: "linear-gradient(90deg, #0a64a4, #0a64a4)", color: "#fff", border: "none", borderRadius: "6px", fontWeight: "700", fontSize: "14px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
                   🎟️ MUA VÉ
                 </button>
               </div>
