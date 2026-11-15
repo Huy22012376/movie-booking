@@ -178,6 +178,19 @@ services:
       - DB_HOST=booking-db-primary
       - DB_NAME=booking_db
 
+
+  booking-service-2:
+    build: ./services/booking-service
+    container_name: booking-service-2
+    networks: [cinema-net]
+    depends_on: [booking-db-primary, kafka]
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
+      - PORT=3002
+      - SERVICE_NAME=booking-service-2
+      - DB_HOST=booking-db-primary
+      - DB_NAME=booking_db
+
   seat-locking:
     build: ./services/seat-locking
     container_name: seat-locking

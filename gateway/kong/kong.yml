@@ -7,7 +7,9 @@ plugins:
       headers: ["Accept", "Content-Type", "Authorization"]
 services:
   - name: booking-service
-    url: http://booking-service:3002
+    host: booking-upstream
+    port: 3002
+    protocol: http
     routes:
       - name: booking-route
         paths: ["/api/booking"]
@@ -30,3 +32,11 @@ services:
       - name: seat-route
         paths: ["/api/seats"]
         strip_path: false
+
+upstreams:
+  - name: booking-upstream
+    targets:
+      - target: booking-service:3002
+        weight: 100
+      - target: booking-service-2:3002
+        weight: 100

@@ -128,6 +128,13 @@ export default function App() {
     await loadAvailForDate(movie, firstDate, cinema);
   };
 
+  const isPastShowtime = (dateObj, timeStr) => {
+    if (!dateObj || !firstDate || dateObj.id !== firstDate.id) return false;
+    const now = new Date();
+    const [hh, mm] = timeStr.split(":").map(Number);
+    return now.getHours() > hh || (now.getHours() === hh && now.getMinutes() >= mm);
+  };
+
   const goToBooking = (movieObj, timeStr) => {
     setCheckoutStep("SEATS"); setCombos({ family: 0, sweet: 0 }); setDiscount(0); setShowQrModal(false);
     setSelectedTime(timeStr);
@@ -390,10 +397,12 @@ export default function App() {
                     const isLate = Number(st.time.slice(0, 2)) >= 22;
                     return (
                       <div key={st.time} style={{ textAlign: "center" }}>
-                        <div className={`showtime-pill ${isLate ? "late" : ""}`} onClick={() => goToBooking({ ...firstMovie, time: `${st.time} (${selectedDate.id}) - ${st.room}` }, st.time)}>
+                        {(() => { const past = isPastShowtime(selectedDate, st.time); return (<>
+                        <div className={`showtime-pill ${isLate ? "late" : ""}`} onClick={() => !past && goToBooking({ ...firstMovie, time: `${st.time} (${selectedDate.id}) - ${st.room}` }, st.time)} style={past ? { opacity: 0.45, cursor: "not-allowed", background: "#e2e8f0", color: "#64748b" } : {}}>
                           {st.time}
                         </div>
-                        <div style={{ fontSize: "11px", color: "#64748b", marginTop: "4px" }}>{free} ghế trống</div>
+                        <div style={{ fontSize: "11px", color: past ? "#94a3b8" : "#64748b", marginTop: "4px" }}>{past ? "Đã chiếu" : `${free} ghế trống`}</div>
+                        </>); })()}
                       </div>
                     );
                   })}
@@ -420,10 +429,12 @@ export default function App() {
                       const isLate = Number(st.time.slice(0, 2)) >= 22;
                       return (
                         <div key={st.time} style={{ textAlign: "center" }}>
-                          <div className={`showtime-pill ${isLate ? "late" : ""}`} onClick={() => goToBooking({ ...m, time: `${st.time} (${selectedDate.id}) - ${st.room}` }, st.time)}>
+                          {(() => { const past = isPastShowtime(selectedDate, st.time); return (<>
+                          <div className={`showtime-pill ${isLate ? "late" : ""}`} onClick={() => !past && goToBooking({ ...m, time: `${st.time} (${selectedDate.id}) - ${st.room}` }, st.time)} style={past ? { opacity: 0.45, cursor: "not-allowed", background: "#e2e8f0", color: "#64748b" } : {}}>
                             {st.time}
                           </div>
-                          <div style={{ fontSize: "11px", color: "#64748b", marginTop: "4px" }}>{free} ghế trống</div>
+                          <div style={{ fontSize: "11px", color: past ? "#94a3b8" : "#64748b", marginTop: "4px" }}>{past ? "Đã chiếu" : `${free} ghế trống`}</div>
+                          </>); })()}
                         </div>
                       );
                     })}
@@ -598,10 +609,12 @@ export default function App() {
                   const isLate = Number(st.time.slice(0, 2)) >= 22;
                   return (
                     <div key={st.time} style={{ textAlign: "center" }}>
-                      <div className={`showtime-pill ${isLate ? "late" : ""}`} onClick={() => goToBooking({ ...selectedMovie, time: `${st.time} (${selectedDate.id}) - ${st.room}` }, st.time)}>
+                      {(() => { const past = isPastShowtime(selectedDate, st.time); return (<>
+                      <div className={`showtime-pill ${isLate ? "late" : ""}`} onClick={() => !past && goToBooking({ ...selectedMovie, time: `${st.time} (${selectedDate.id}) - ${st.room}` }, st.time)} style={past ? { opacity: 0.45, cursor: "not-allowed", background: "#e2e8f0", color: "#64748b" } : {}}>
                         {st.time}
                       </div>
-                      <div style={{ fontSize: "11px", color: freeSeats > 0 ? "#059669" : "#ef4444", fontWeight: "600", marginTop: "4px" }}>{freeSeats} ghế trống</div>
+                      <div style={{ fontSize: "11px", color: past ? "#94a3b8" : freeSeats > 0 ? "#059669" : "#ef4444", fontWeight: "600", marginTop: "4px" }}>{past ? "Đã chiếu" : `${freeSeats} ghế trống`}</div>
+                      </>); })()}
                     </div>
                   );
                 })}

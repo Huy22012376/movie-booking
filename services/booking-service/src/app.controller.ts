@@ -1,3 +1,4 @@
+import { EventPattern, Payload } from "@nestjs/microservices";
 import { Controller, Post, Get, Body, Inject, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -38,5 +39,13 @@ export class AppController {
       movieId,
     });
     return saved;
+  }
+
+  @EventPattern('payment.completed')
+  async handlePaymentCompleted(@Payload() data: any) {
+    const id = data?.bookingId || data?.id;
+    if (id) {
+      await this.bookingRepo.update({ id }, { status: 'CONFIRMED' }).catch(() => {});
+    }
   }
 }

@@ -72,6 +72,8 @@ docker exec user-db-replica psql -U postgres -d user_db -c "SELECT \"fullName\",
 docker exec booking-db-primary psql -U postgres -d booking_db -c "SELECT \"movieId\", \"seatCode\", status, \"lockedBy\" FROM seats WHERE status != 'AVAILABLE' ORDER BY \"movieId\", \"seatCode\";" && \
 docker exec booking-db-replica psql -U postgres -d booking_db -c "SELECT \"movieId\", \"seatCode\", status, \"lockedBy\" FROM seats WHERE status != 'AVAILABLE' ORDER BY \"movieId\", \"seatCode\";"
 ```
+### Xem 5 giao dịch thanh toán mới nhất trong payment_db (Sắp xếp từ mới nhất lên đầu):
+docker exec payment-db-primary psql -U postgres -d payment_db -c "SELECT id, user_id, cinema, seats, amount, method, status, created_at FROM payments ORDER BY created_at DESC LIMIT 5;"
 
 ### Đối chiếu danh sách Đơn đặt vé & Thanh toán ở cả Primary và Replica
 ```bash
