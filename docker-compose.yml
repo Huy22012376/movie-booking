@@ -112,6 +112,35 @@ services:
       chmod 0700 /var/lib/postgresql/data;
       exec docker-entrypoint.sh postgres -c hot_standby=on
       "
+  payment-db-primary:
+    image: postgres:16-alpine
+    container_name: payment-db-primary
+    networks: [cinema-net]
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=payment_db
+    command: >
+      postgres -c wal_level=replica -c max_wal_senders=10 -c max_replication_slots=10 -c hot_standby=on
+
+  payment-db-replica:
+    image: postgres:16-alpine
+    container_name: payment-db-replica
+    networks: [cinema-net]
+    depends_on: [payment-db-primary]
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
+      - PGPASSWORD=postgres
+    command: >
+      bash -c "
+      until pg_isready -h payment-db-primary -U postgres; do sleep 2; done;
+      rm -rf /var/lib/postgresql/data/*;
+      pg_basebackup -h payment-db-primary -D /var/lib/postgresql/data -U postgres -v -P -R -X stream;
+      chmod 0700 /var/lib/postgresql/data;
+      exec docker-entrypoint.sh postgres -c hot_standby=on
+      "
+
   # --- 3. MICROSERVICES (NESTJS) ---
   catalog-service-1:
     build: ./services/catalog-service
@@ -165,13 +194,13 @@ services:
     build: ./services/payment-service
     container_name: payment-service
     networks: [cinema-net]
-    depends_on: [booking-db-primary, kafka]
+    depends_on: [payment-db-primary, kafka]
     environment:
       - TZ=Asia/Ho_Chi_Minh
       - PORT=3004
       - SERVICE_NAME=payment-service
-      - DB_HOST=booking-db-primary
-      - DB_NAME=booking_db
+      - DB_HOST=payment-db-primary
+      - DB_NAME=payment_db
 
   user-service:
     build: ./services/user-service
@@ -270,7 +299,7 @@ services:
     image: postgres:16-alpine
     container_name: db-backup
     networks: [cinema-net]
-    depends_on: [booking-db-primary, user-db-primary, catalog-db-primary]
+    depends_on: [booking-db-primary, user-db-primary, catalog-db-primary, payment-db-primary]
     environment:
       - TZ=Asia/Ho_Chi_Minh
       - PGPASSWORD=postgres
@@ -282,6 +311,7 @@ services:
         pg_dump -h booking-db-primary -U postgres booking_db > /backups/booking_$$TS.sql
         pg_dump -h user-db-primary -U postgres user_db > /backups/user_$$TS.sql
         pg_dump -h catalog-db-primary -U postgres catalog_db > /backups/catalog_$$TS.sql
+        pg_dump -h payment-db-primary -U postgres payment_db > /backups/payment_$$TS.sql
         find /backups -name "*.sql" -mtime +7 -delete
         sleep 3600
       done'
