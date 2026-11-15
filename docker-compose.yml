@@ -264,3 +264,24 @@ services:
       - TZ=Asia/Ho_Chi_Minh
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
+
+  # --- 7. AUTOMATED DATABASE BACKUP (CRONJOB EVERY 1 HOUR) ---
+  db-backup:
+    image: postgres:16-alpine
+    container_name: db-backup
+    networks: [cinema-net]
+    depends_on: [booking-db-primary, user-db-primary, catalog-db-primary]
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
+      - PGPASSWORD=postgres
+    volumes:
+      - ./backups:/backups
+    command: >
+      sh -c 'while true; do
+        TS=$$(date +"%Y-%m-%d_%Hh%M")
+        pg_dump -h booking-db-primary -U postgres booking_db > /backups/booking_$$TS.sql
+        pg_dump -h user-db-primary -U postgres user_db > /backups/user_$$TS.sql
+        pg_dump -h catalog-db-primary -U postgres catalog_db > /backups/catalog_$$TS.sql
+        find /backups -name "*.sql" -mtime +7 -delete
+        sleep 3600
+      done'

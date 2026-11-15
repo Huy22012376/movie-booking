@@ -12,6 +12,7 @@ export default function App() {
     JSON.parse(localStorage.getItem("cine_user") || "null")
   );
   const [view, setView] = useState(saved?.view || "HOME");
+  const [pendingBooking, setPendingBooking] = useState(false);
   const [city, setCity] = useState(saved?.city || "Hà Nội");
   const [cinema, setCinema] = useState(saved?.cinema || "Cine Thanh Xuân");
   const [tab, setTab] = useState("DANG_CHIEU");
@@ -125,6 +126,7 @@ export default function App() {
     setTicket(null);
     setShowModal(false);
     if (!currentUser) {
+      setPendingBooking(true);
       setView("AUTH");
     } else {
       setView("BOOKING");
@@ -242,9 +244,9 @@ export default function App() {
               </>
             ) : (
               <>
-                <span onClick={() => setView("AUTH")} style={{ cursor: "pointer", fontWeight: "600" }}>Đăng nhập</span>
+                <span onClick={() => { setPendingBooking(false); setView("AUTH"); }} style={{ cursor: "pointer", fontWeight: "600" }}>Đăng nhập</span>
                 <span style={{ color: "#475569" }}>|</span>
-                <span onClick={() => setView("AUTH")} style={{ cursor: "pointer", fontWeight: "600" }}>Đăng ký</span>
+                <span onClick={() => { setPendingBooking(false); setView("AUTH"); }} style={{ cursor: "pointer", fontWeight: "600" }}>Đăng ký</span>
               </>
             )}
           </div>
@@ -426,7 +428,8 @@ export default function App() {
           onSuccess={(user) => {
             localStorage.setItem("cine_user", JSON.stringify(user));
             setCurrentUser(user);
-            setView("BOOKING");
+            setView(pendingBooking ? "BOOKING" : "HOME");
+            setPendingBooking(false);
           }}
           onBack={() => setView("HOME")}
         />
